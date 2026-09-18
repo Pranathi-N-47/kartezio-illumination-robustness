@@ -48,7 +48,7 @@ class PointMutation(Mutation):
                             only_one=parameter_idx,
                         )
             random_matrix = np.random.random(size=self.adapter.n_outputs)
-            sampling_indices = np.nonzero(random_matrix < self.out_rate)
+            sampling_indices = np.flatnonzero(random_matrix < self.out_rate)
             for output in sampling_indices:
-                self.mutate_output(genotype, chromosome, output)
+                self.mutate_output(genotype, chromosome, int(output))
         return genotype

@@ -782,15 +782,14 @@ class Mutation(KartezioComponent, ABC):
     def mutate_output(self, genotype: Genotype, chromosome: str, idx: int):
         n_previous_nodes = 1 + self.adapter.n_nodes
         p = self.edges_weights.weights_edges(n_previous_nodes)
-        new_edges = np.random.choice(range(n_previous_nodes), size=1, p=p)
-        self.adapter.set_output(genotype, chromosome, idx, new_edges)
-        for edge, new_edge in enumerate(new_edges):
-            if new_edge == 0:
-                # sample from inputs
-                new_edges[edge] = np.random.randint(self.adapter.n_inputs)
-            else:
-                # connect to previous nodes
-                new_edges[edge] = new_edge - 1 + self.adapter.n_inputs
+        new_edge = int(np.random.choice(n_previous_nodes, p=p))
+
+        if new_edge == 0:
+            connection = int(np.random.randint(self.adapter.n_inputs))
+        else:
+            connection = new_edge - 1 + self.adapter.n_inputs
+
+        self.adapter.set_output(genotype, chromosome, idx, connection)
 
     @abstractmethod
     def mutate(self, genotype: Genotype) -> Genotype:

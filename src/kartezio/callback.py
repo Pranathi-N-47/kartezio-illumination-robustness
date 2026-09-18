@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from abc import ABC
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import matplotlib.pyplot as plt
@@ -8,9 +11,11 @@ import numpy as np
 from codecarbon import EmissionsTracker
 
 from kartezio.core.components import dump_component
-from kartezio.evolution.population import PopulationHistory
 from kartezio.helpers import Observer
 from kartezio.utils.json_handler import json_write
+
+if TYPE_CHECKING:
+    from kartezio.evolution.population import PopulationHistory
 
 
 def timestamp(ms=True):
