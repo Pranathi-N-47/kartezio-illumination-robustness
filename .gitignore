@@ -14,8 +14,10 @@ dist/
 downloads/
 eggs/
 .eggs/
+hardware_items/
 lib/
 lib64/
+papers/
 parts/
 sdist/
 var/

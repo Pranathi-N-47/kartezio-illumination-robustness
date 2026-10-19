@@ -45,3 +45,6 @@ dev = [
 [tool.coverage.run]
 source = ["src"]  # Remplacez par le nom de votre dossier source si besoin (ex: "src")
 omit = ["tests/*"]  # Évite de mesurer la couverture des fichiers de tests eux-mêmes
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "."]
