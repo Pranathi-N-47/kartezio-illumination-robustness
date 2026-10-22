@@ -163,7 +163,7 @@ This project uses the Kartezio framework. Please cite:
 }
 ```
 
-The benchmark should also be cited using the original paper:
+Citation for the benchmark:
 
 ```bibtex
 @article{khan2015benchmark,
