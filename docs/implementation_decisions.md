@@ -38,7 +38,7 @@ not implemented.
 `os error 396 (incompatible hardlinks)` because the workspace is on a cloud-synced
 Desktop. Setting `UV_LINK_MODE=copy` resolves it.
 
-### Kartezio API flow (as read from source; verified in Stage 4)
+### Kartezio API flow (as read from source; verified during the pilot test)
 
 - Primitives/endpoints/fitness are registered with the `@register(<Fundamental>)`
   decorator in `kartezio.core.components`.
@@ -194,6 +194,18 @@ The `regionprops`/classification parts of [M] are out of scope. Stage 3.
 opencv-python dependencies). `pyyaml` is **not** installed; it will be added as a
 minimal dependency in the stage that introduces YAML configs.
 
+### D12. Baseline validation against Paper Fig. 4
+
+- Validated Python Otsu and Sobel baselines against Figure 4 of [P].
+- Replicated the 13-image degradation series for Scene 1 ($r=1, b=1..13, n=b+1$).
+- Evaluated the 5 milestone conditions indicated by arrows in Fig. 4:
+  P1 ($A=0.005$), P4 ($A=0.256$), P6 ($A=0.555$), P8 ($A=0.749$), P13 ($A=1.000$).
+- Failure modes match paper exactly: Otsu suffers catastrophic shadow streak false-positives
+  at $A \approx 0.75$; Sobel edges fragment and disappear into empty masks at $A \ge 0.75$.
+- Robustness scores without omitted classifier $\mu_3$: $R_{\text{otsu}} = 0.39$, $R_{\text{sobel}} = 0.41$.
+- Detailed report: `docs/baseline_reproduction_report.md`.
+- Side-by-side figure: `docs/audit_vis/paper_fig4_vs_python_comparison.png`.
+
 ---
 
 ## Stage log
@@ -203,3 +215,5 @@ minimal dependency in the stage that introduces YAML configs.
 | 2026-10-19 | 0 | `uv run pytest -q` (with `UV_LINK_MODE=copy`) | 39 passed, 1 failed (pre-existing `test_RoiPolyHedron`) |
 | 2026-10-19 | 1 | `uv run python scripts/build_manifest.py`<br>`uv run python scripts/validate_data.py`<br>`uv run pytest tests/test_illumination_robustness -v` | 728/728 images validated and manifested; 4 scene ground truths aligned; data audit report generated; 11/11 tests passed. |
 | 2026-10-19 | 2 | `uv run pytest tests/test_illumination_robustness -v` | Implemented normalization, postprocessing, Dice/IoU, paper Q_seg (with S4 sequential BLOB matching), artifact levels, and robustness indices; benchmark protocol frozen; 28/28 tests passed. |
+| 2026-10-19 | 3 | `uv run pytest tests/test_illumination_robustness/test_baselines.py -v`<br>`uv run python scripts/run_baselines.py --mode smoke`<br>`uv run python scripts/visualize_paper_fig4_comparison.py`<br>`uv run python scripts/run_baselines.py --mode full` | Implemented Otsu & Sobel baseline pipelines; validated against Fig 4 of the paper; executed full 728-image benchmark (1,456 evaluations, run_id `baselines_full_20261019_182719`); generated `docs/baseline_reproduction_report.md` and `docs/audit_vis/paper_fig4_vs_python_comparison.png`; 32/32 tests passed. |
+

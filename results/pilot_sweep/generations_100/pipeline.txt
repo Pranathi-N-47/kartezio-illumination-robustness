@@ -1,0 +1,4 @@
+Pilot-test elite pipeline
+Active nodes: 2 / 16
+node 5: Sharpen edges=[0] params=[162, 32]
+node 6: Inverse edges=[5] params=[27, 134]

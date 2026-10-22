@@ -616,7 +616,7 @@ Run relevant tests after each stage, then run the full test suite before finaliz
 - Run sample first, then full planned baseline evaluation.
 - **Gate:** masks and scores are reproducible and protocol differences are documented.
 
-### Stage 4 — Kartezio adapter and primitives
+### Pilot test — Kartezio adapter and primitives
 - Register minimal primitives using the actual framework API.
 - Build and test one complete graph.
 - Add evaluator-to-fitness adapter.

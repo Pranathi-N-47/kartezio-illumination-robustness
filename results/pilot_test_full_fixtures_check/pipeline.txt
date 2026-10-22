@@ -1,0 +1,4 @@
+Pilot-test elite pipeline
+Active nodes: 2 / 4
+node 1: Max edges=[0, 0] params=[3, 53]
+node 3: BlackHat edges=[1] params=[199, 205]

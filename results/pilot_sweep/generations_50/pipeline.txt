@@ -1,0 +1,4 @@
+Pilot-test elite pipeline
+Active nodes: 2 / 16
+node 1: Laplacian edges=[0] params=[74, 127]
+node 3: Gradient edges=[1] params=[232, 2]

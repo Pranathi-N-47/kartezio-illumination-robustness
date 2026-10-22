@@ -1,0 +1,4 @@
+Pilot-test elite pipeline
+Active nodes: 2 / 16
+node 1: BitwiseNot edges=[0] params=[110, 35]
+node 15: OtsuThreshold edges=[1] params=[112, 27]
