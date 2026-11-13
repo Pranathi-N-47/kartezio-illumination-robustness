@@ -575,7 +575,9 @@ dependencies = [
     { name = "pandas" },
     { name = "roifile" },
     { name = "scikit-image" },
+    { name = "scipy" },
     { name = "tabulate" },
+    { name = "tifffile" },
 ]
 
 [package.dev-dependencies]
@@ -595,7 +597,9 @@ requires-dist = [
     { name = "pandas" },
     { name = "roifile" },
     { name = "scikit-image" },
+    { name = "scipy" },
     { name = "tabulate" },
+    { name = "tifffile" },
 ]
 
 [package.metadata.requires-dev]
