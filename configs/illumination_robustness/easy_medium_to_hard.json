@@ -1,0 +1,15 @@
+{
+  "experiment": "easy_medium_to_hard",
+  "description": "Train on easy and medium conditions and evaluate on hard conditions.",
+  "common_config": "common.json",
+  "scene_scope": "all",
+  "condition_groups": {
+    "easy": {"shading_indices": [1, 2, 3, 4], "noise_indices": [1, 2, 3, 4, 5]},
+    "medium": {"shading_indices": [5, 6, 7, 8], "noise_indices": [6, 7, 8, 9, 10]},
+    "hard": {"shading_indices": [9, 10, 11, 12, 13], "noise_indices": [11, 12, 13, 14]}
+  },
+  "runs": [
+    {"name": "easy_medium_to_hard", "train_groups": ["easy", "medium"], "test_groups": ["hard"]}
+  ],
+  "expected_images_per_scene_per_group": 20
+}

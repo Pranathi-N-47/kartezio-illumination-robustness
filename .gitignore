@@ -165,6 +165,9 @@ cython_debug/
 *.npy
 *.npz
 *.json
+!configs/
+!configs/illumination_robustness/
+!configs/illumination_robustness/*.json
 *.zip
 *.PNG
 *.tif
