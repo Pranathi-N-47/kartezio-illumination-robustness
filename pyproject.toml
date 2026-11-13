@@ -8,6 +8,8 @@ readme = "README.md"
 dependencies = [
     "numpy",
     "pandas",
+    "scipy",
+    "tifffile",
     "scikit-image",
     "opencv-python",
     "numba",

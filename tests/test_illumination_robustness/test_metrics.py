@@ -1,4 +1,4 @@
- """Unit tests for metrics, fuzzy membership, Q_seg, and robustness calculations."""
+"""Unit tests for metrics, fuzzy membership, Q_seg, and robustness calculations."""
 
 import numpy as np
 import pytest

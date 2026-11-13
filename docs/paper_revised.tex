@@ -1,0 +1,339 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[top=0.8in,bottom=0.8in,left=0.85in,right=0.85in]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{microtype}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\setlength{\parskip}{3pt}
+\setlength{\parindent}{0pt}
+
+\begin{document}
+
+\begin{center}
+    {\LARGE\textbf{Evolutionary Generation of Illumination-Robust Classical Image-Processing Pipelines for Image Segmentation}\par}
+    \vspace{0.7em}
+    D Lakshmi Akshitha, Kolla Akshara, Bhuvaneshwari D,\\
+    Pranathi Nibhanipudi, and Bagavathi C\\[0.4em]
+    {\small Department of Computer Science and Engineering, Amrita School of Computing,\\
+    Amrita Vishwa Vidyapeetham, Coimbatore, India}
+\end{center}
+
+\begin{abstract}
+Illumination and noise changes can make a fixed image-segmentation pipeline unreliable. In this project, we use Kartezio, a framework that evolves interpretable computer-vision algorithms with Cartesian Genetic Programming, to design segmentation pipelines for hardware-item images captured under varying conditions. The evolved pipelines combine conventional operations such as thresholding, filtering, edge detection, and morphology. We evaluate segmentation quality and robustness using Dice, IoU, object-count error, $Q_{\mathrm{seg}}$, and the segmentation-only robustness measure $R_{\mathrm{seg}}$. Otsu and Sobel methods are used as fixed reference baselines, and scene-held-out evaluation is planned for the final experiments. The current implementation covers benchmark validation, baseline evaluation, synthetic pilot evolution, and pipeline export. Classification is outside the scope of this study, so the work does not claim to reproduce the complete evaluation protocol of the original benchmark paper.
+\end{abstract}
+
+\textbf{Keywords:} image segmentation, Cartesian Genetic Programming, evolutionary computation, illumination robustness, classical image processing.
+
+\section{Introduction}
+
+Image segmentation separates objects from their background and is used in inspection, measurement, and recognition. Changes in illumination make this difficult because shadows and gradients alter object and background intensities, while noise can break object boundaries or introduce false foreground regions. The hardware-items benchmark of Khan et al. varies shading and background noise and provides ground-truth annotations for segmentation and classification \cite{khan2015}. Classical operations such as thresholding, filtering, edge detection, and morphology are fast and interpretable, but their performance depends on the choice and order of operations and on parameters that may change with the data. We therefore use evolutionary search to explore combinations of these operations. The current work focuses on implementing and validating this framework through baselines and pilot evolution; the final benchmark-scale comparison is planned but has not yet been completed.
+
+\section{Related Work}
+
+\subsection{Classical Image Segmentation and Its Limitations}
+
+Segmentation splits an image into regions, usually object and background, and a lot of measurement, inspection and recognition work depends on getting it right. Lighting makes this hard. Shadows and gradients change the intensity of pixels inside a single object, so object and background values start to overlap, and noise can smear edges or leave stray specks. Khan, Mikut, and Reischl built a benchmark around exactly this, with ground-truth annotations and controlled changes in shading and background noise \cite{khan2015}.
+
+Classical image processing has most of the tools one would reach for. Thresholding sorts pixels by intensity, filters suppress noise, edge operators pick up intensity jumps, and morphology tidies binary masks. Adaptive thresholding copes with some lighting variation \cite{yazid2013,cai2013,pattnaik2021,pattnaik2024}, and improved 2D Otsu variants target uneven light and noise \cite{guo2014,sha2016,xing2020}. The trouble is that a fixed chain of operations with hand-picked parameters can suit one dataset and fail on the next.
+
+\subsection{Illumination Correction and Enhancement}
+
+The idea here is to flatten the lighting first so that a simpler segmentation step can follow. Dey's survey is the most direct overview of uneven-illumination correction \cite{dey2019}; many of the methods it covers estimate a smooth background and divide or subtract it. Wang et al. aim to improve visibility while keeping the lighting looking natural \cite{wang2013}.
+
+A large share of enhancement work rests on Retinex-style thinking, where an image is a product of reflectance (the object) and illumination (the light). LIME estimates an illumination map and uses it to brighten dark images \cite{guo2017lime}; Deep Retinex Decomposition learns the split with a network \cite{wei2018}; and Kindling the Darkness follows a similar decomposition design \cite{jiang2019kind}. Other methods learn the mapping directly: LLNet uses an autoencoder \cite{lore2017}, Learning to See in the Dark processes raw low-light sensor data \cite{chen2018dark}, Zero-DCE predicts per-image enhancement curves without reference images \cite{guo2020zerodce}, and EnlightenGAN trains without paired supervision \cite{jiang2021enlightengan}. The move away from paired data matters, because matched dark and bright pairs are hard to collect.
+
+These papers are relevant, but their target is usually how the image looks. A brighter picture does not guarantee a better mask, and enhancement can amplify noise or add artefacts that hurt later steps. Any enhancement used before segmentation should be judged by segmentation metrics, not by appearance.
+
+\subsection{Learned Segmentation and Image Translation}
+
+Deep learning changed segmentation, so it has to be mentioned even though it is not our focus. Fully convolutional networks gave dense per-pixel prediction trained end to end \cite{long2015}. U-Net added skip connections and made training on small annotated sets practical \cite{ronneberger2015}. SegNet is another encoder--decoder design \cite{badrinarayanan2017}, Mask R-CNN adds a mask branch for instance segmentation \cite{he2017}, and DeepLab-style and PSPNet models use atrous convolution and pyramid pooling to gather context \cite{chen2018deeplab,pspnet2017}. Image-to-image translation offers another route to handling appearance change, with conditional GANs for paired data \cite{isola2017} and CycleGAN for unpaired data \cite{zhu2017}.
+
+These models capture complicated patterns and can be very accurate when test data resemble training data. The cost is labelled data, compute and reduced transparency, and robustness to conditions missing from training is not guaranteed. We treat them as context rather than as the subject, and any comparison with classical or evolved pipelines should account for cost as well as accuracy.
+
+\subsection{Evolutionary Computation for Pipeline Generation}
+
+Evolutionary algorithms maintain a population of candidates and repeatedly select and vary them according to a fitness function. They fit image processing because operator choices are discrete, processing stages interact, and quality can combine several goals. Surveys cover applications from segmentation and edge detection to feature analysis, classification, and object detection \cite{bi2023evolutionary}. Genetic programming represents candidates as executable programs and has been used for image-analysis tasks \cite{khan2021gp}. For segmentation, evolution can search for thresholds, configurations, or operator combinations that optimize a mask-quality measure. What can be discovered depends heavily on the fitness function and representation, while computational cost and overfitting to the optimization data remain concerns \cite{bi2023evolutionary,khan2021gp}.
+
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Kartezio for Pipeline Evolution}
+
+Kartezio is a framework for evolving image-processing algorithms rather than learning a large set of opaque model weights. The software provides a component-based implementation of Cartesian Genetic Programming for constructing and evaluating image-processing graphs \cite{cortacero2023,miller2020,margraf2023}; each active node applies a registered operation to one or more previous results, so the graph records both the operations and their order. In this project, the available nodes include intensity transformations, thresholding, smoothing, edge processing, morphology, hole filling, border clearing, and small-object removal, followed by an endpoint that produces a binary mask.
+
+Evolution maintains a population of candidate graphs, evaluates them on training images, and mutates their operations, parameters, or connections over successive generations. Inactive nodes may remain in the graph representation, so the configured graph size is a maximum capacity rather than a requirement that every node be used. The fitness function is expressed as a loss because Kartezio minimises fitness:
+
+The fitness function is expressed as a loss because Kartezio minimises fitness:
+
+\begin{equation}
+    \mathrm{loss}=1-Q_{\mathrm{seg}}.
+\end{equation}
+
+Thus, a better segmentation has a lower loss. The project will compare a quality-only fitness with a robustness-aware fitness that evaluates several illumination and noise conditions.
+
+\subsection{Benchmark and Evaluation Protocol}
+\label{sec:protocol}
+
+The benchmark contains four scenes, thirteen shading levels, and fourteen noise levels, giving 728 grayscale images. Each scene has a corresponding segmentation annotation. The images are 8-bit grayscale at $1000\times1500$ pixels. The shading index $b$ ranges from 1 to 13, with 1 representing the brightest condition and 13 the darkest or most heavily shaded condition. The noise index $n$ ranges from 1 to 14; the benchmark defines the noise variance as $\sigma_n^2=125(n-1)$, so the standard deviation is $\sigma_n=\sqrt{125(n-1)}$ and increases with $n$ \cite{khan2015}. The prescribed robustness series uses $(b,n)=(1,2),(2,3),\ldots,(13,14)$ for each scene. This benchmark structure makes it possible to study both segmentation accuracy and degradation under controlled changes in shading and noise \cite{khan2015,mikes2022,kamann2021,hendrycks2019}. Some stored annotations are at a higher resolution and must be aligned before evaluation. We use area-based resizing for masks, a foreground threshold of 0.5, and eight-connected components. Empty masks are handled explicitly: two empty masks receive Dice and IoU of one, while a mismatch between an empty and non-empty mask receives zero.
+
+The reported metrics are Dice, IoU, object-count error, and the paper-derived segmentation score
+
+\begin{equation}
+    Q_{\mathrm{seg}}=\mu_1\mu_2.
+\end{equation}
+
+The segmentation-only robustness index is calculated over the prescribed adjacent condition sequence:
+
+\begin{equation}
+    R_{\mathrm{seg}}(r)=\frac{1}{13}\sum_{b=1}^{13}Q_{\mathrm{seg}}(r,b,b+1).
+\end{equation}
+
+The final evolutionary evaluation will use leave-one-scene-out rotations. One scene will be held out for testing while the other three scenes are used for training. The held-out scene will not be used for fitness calculation or pipeline selection.
+
+\subsection{Implementation Status}
+\label{sec:status}
+
+The repository currently contains code for benchmark manifests, ground-truth loading, preprocessing, evaluation metrics, robustness calculations, baseline pipelines, Kartezio primitives, pilot fitness, and pilot evolution. The planned final evaluation uses fixed training conditions and leave-one-scene-out splits so that held-out scenes are not used during pipeline selection. It will also test condition generalisation by training on lower noise and lighter shading levels and evaluating on progressively higher noise and darker shading levels. These scene-held-out and easy-to-hard condition tests address complementary forms of generalisation.
+
+\section{Preliminary Results}
+\label{sec:preliminary}
+
+The pilot dataset contains twelve deterministic synthetic fixtures, including different object arrangements, shapes, contacts, holes, border cases, illumination gradients, noise, empty images, and constant images; eight fixtures are used for training and four for testing. The pilot workflow has been run across generation budgets of 50, 100, 250, 500, and 1000. The selected pilot pipeline used two active nodes, a bitwise inversion followed by Otsu thresholding, and achieved zero training loss with a held-out loss of approximately $3.26\times10^{-7}$. This confirms that graph construction, evolution, evaluation, and artifact saving work end to end, but it does not establish benchmark-scale performance.
+
+\subsection{Baseline results}
+
+The corrected Python baseline was evaluated on all 728 images using Otsu and Sobel, giving 1,456 successful evaluations. The aggregate results were:
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Corrected Python baseline results over the full benchmark.}
+\label{tab:python-baselines}
+\begin{tabular}{lrrrr}
+\toprule
+Method & Dice & IoU & Mean $Q_{\mathrm{seg}}$ & Series $R_{\mathrm{seg}}$\\
+\midrule
+Otsu  & 0.7651 & 0.6596 & 0.6019 & 0.5725\\
+Sobel & 0.1597 & 0.1380 & 0.1472 & 0.2084\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The MATLAB-compatible reference was also run on the 52-image robustness series, consisting of thirteen adjacent condition pairs for each scene. Its overall series scores were 0.5891 for Otsu and 0.5232 for Sobel.
+
+The Python Otsu result is reasonably close to the MATLAB reference. The Python Sobel result remains substantially different because MATLAB's automatic threshold selection in `edge(..., 'sobel')` is not reproduced exactly. We use the Python baselines for the main comparison with evolved pipelines because the evolved graphs are executed with the same Python image-processing libraries, preprocessing, and evaluation code. This controls for differences in filtering, edge operators, morphology, thresholding, and boundary handling. The MATLAB results are retained as a separate reference for paper-oriented validation rather than as the primary comparison baseline.
+
+\section{Research Gaps and Current Limitations}
+
+The current implementation does not yet answer whether evolved pipelines outperform fixed baselines on unseen scenes: the pilot uses a small synthetic dataset, one seed, and one configuration, so it is an integration test rather than a final experiment. The original benchmark also includes classification, but this project currently evaluates segmentation only; its $Q_{\mathrm{seg}}$ and $R_{\mathrm{seg}}$ values should therefore not be compared directly with the paper's full score. Finally, the Python and MATLAB Sobel implementations are not numerically identical, so the Python baseline is used primarily with evolved Python pipelines that share the same evaluation environment.
+
+\section{Comparison Framework}
+
+The main comparison will be between evolved Python pipelines and fixed Python baselines under the same metric and execution protocol, considering both absolute segmentation quality and degradation across conditions. The analysis will compare:
+
+\begin{itemize}
+    \item Dice, IoU, and $Q_{\mathrm{seg}}$.
+    \item $R_{\mathrm{seg}}$ over the adjacent condition series.
+    \item Performance on held-out scenes.
+    \item Performance across easy and difficult conditions.
+    \item Active-node count and pipeline structure.
+    \item Runtime and variation across random seeds.
+\end{itemize}
+
+This separates the question of whether a pipeline is accurate from the question of whether it remains accurate when the image conditions change.
+
+\section{Planned Work}
+\label{sec:planned}
+
+The next phase will implement and validate the quality-only and robustness-aware fitness strategies using hand-constructed test cases. The primitive set, graph capacity, mutation settings, random seeds, metric definitions, training conditions, and split files will then be fixed before the main experiments.
+
+Evolution will be run using leave-one-scene-out splits, with one scene reserved for testing and the remaining scenes used for training. Additional condition-generalisation experiments will train pipelines on lower noise and lighter shading levels and test them on progressively higher noise and darker shading levels. Selected configurations will be repeated with multiple random seeds.
+
+The final evaluation will compare both fitness strategies with the fixed Python baselines using per-image metrics, scene summaries, robustness curves, prediction visualisations, pipeline complexity, runtime, and failure cases. Configurations, split files, logs, raw results, and pipeline artifacts will be saved for reproducibility. The evaluation will remain segmentation-focused because classification is not implemented.
+
+\section{Conclusion}
+
+This project uses Kartezio to search for interpretable classical image-processing pipelines for segmentation under changing illumination and noise. The benchmark loader, metrics, baseline workflows, synthetic pilot data, Kartezio primitives, and pilot evolution are implemented. The pilot confirms that graph evolution and artifact saving work end to end, while the baseline experiments establish reference behaviour and reveal a remaining difference between Python and MATLAB Sobel implementations.
+
+The main unresolved question is whether evolved pipelines can improve segmentation robustness on scenes that were not used during optimization. This will be addressed through the planned fitness validation, scene-held-out experiments, repeated seeds, and analysis of saved pipeline structures.
+
+\begin{thebibliography}{99}
+
+\bibitem{khan2015}
+A. ul M. Khan, R. Mikut, and M. Reischl,
+``A benchmark data set to evaluate the illumination robustness of image processing algorithms for object segmentation and classification,''
+\emph{PLOS ONE}, vol. 10, no. 7, e0131098, 2015.
+\url{https://doi.org/10.1371/journal.pone.0131098}
+
+\bibitem{cortacero2023}
+K. Cortacero, B. McKenzie, S. M{"u}ller, R. Khazen, F. Lafouresse, G. Corsaut, N. Van Acker, F.-X. Frenois, L. Lamant, N. Meyer, and others,
+``Evolutionary design of explainable algorithms for biomedical image segmentation,''
+\emph{Nature Communications}, vol. 14, no. 1, p. 7112, 2023.
+\url{https://doi.org/10.1038/s41467-023-42664-x}
+
+\bibitem{yazid2013}
+H. Yazid and H. Arof,
+``Gradient based adaptive thresholding,''
+\emph{Journal of Visual Communication and Image Representation}, vol. 24, no. 7, pp. 926--936, 2013.
+
+\bibitem{cai2013}
+J. Cai,
+``Surface fitting for individual image thresholding and beyond,''
+\emph{IET Image Processing}, vol. 7, no. 6, pp. 596--605, 2013.
+
+\bibitem{guo2014}
+W. Y. Guo, X. F. Wang, and X. Z. Xia,
+``Two-dimensional Otsu's thresholding segmentation method based on grid box filter,''
+\emph{Optik}, vol. 125, no. 18, pp. 5234--5240, 2014.
+
+\bibitem{sha2016}
+C. Sha, J. Hou, and H. Cui,
+``A robust 2D Otsu's thresholding method in image segmentation,''
+\emph{Journal of Visual Communication and Image Representation}, vol. 41, pp. 339--351, 2016.
+
+\bibitem{xing2020}
+J. Xing, P. Yang, and L. Qingge,
+``Robust 2D Otsu's algorithm for uneven illumination image segmentation,''
+\emph{Computational Intelligence and Neuroscience}, 2020.
+
+\bibitem{dey2019}
+N. Dey,
+``Uneven illumination correction of digital images: A survey of the state-of-the-art,''
+\emph{Optik}, vol. 183, pp. 483--495, 2019.
+
+\bibitem{guo2017lime}
+X. Guo, Y. Li, and H. Ling,
+``LIME: Low-light image enhancement via illumination map estimation,''
+\emph{IEEE Transactions on Image Processing}, vol. 26, no. 2, pp. 982--993, 2017.
+
+\bibitem{wei2018}
+C. Wei, W. Wang, W. Yang, and J. Liu,
+``Deep Retinex decomposition for low-light enhancement,''
+\emph{British Machine Vision Conference}, 2018.
+
+\bibitem{guo2020zerodce}
+C. Guo, C. Li, J. Guo, C. C. Loy, J. Hou, S. Kwong, and R. Cong,
+``Zero-reference deep curve estimation for low-light image enhancement,''
+\emph{CVPR}, pp. 1780--1789, 2020.
+
+\bibitem{long2015}
+J. Long, E. Shelhamer, and T. Darrell,
+``Fully convolutional networks for semantic segmentation,''
+\emph{CVPR}, pp. 3431--3440, 2015.
+
+\bibitem{ronneberger2015}
+O. Ronneberger, P. Fischer, and T. Brox,
+``U-Net: Convolutional networks for biomedical image segmentation,''
+\emph{MICCAI}, pp. 234--241, 2015.
+
+\bibitem{badrinarayanan2017}
+V. Badrinarayanan, A. Kendall, and R. Cipolla,
+``SegNet: A deep convolutional encoder-decoder architecture for image segmentation,''
+\emph{IEEE TPAMI}, vol. 39, no. 12, pp. 2481--2495, 2017.
+
+\bibitem{he2017}
+K. He, G. Gkioxari, P. Dollár, and R. Girshick,
+``Mask R-CNN,''
+\emph{ICCV}, pp. 2961--2969, 2017.
+
+\bibitem{chen2018deeplab}
+L.-C. Chen, Y. Zhu, G. Papandreou, F. Schroff, and H. Adam,
+``Encoder-decoder with atrous separable convolution for semantic image segmentation,''
+\emph{ECCV}, pp. 801--818, 2018.
+
+\bibitem{miller2020}
+J. F. Miller,
+``Cartesian genetic programming: Its status and future,''
+\emph{Genetic Programming and Evolvable Machines}, vol. 21, pp. 129--168, 2020.
+
+\bibitem{margraf2023}
+A. Margraf, H. Cui, A. Stein, and J. Hähner,
+``Evolving processing pipelines for industrial imaging with Cartesian Genetic Programming,''
+\emph{ACSOS}, pp. 133--138, 2023.
+
+\bibitem{pattnaik2021}
+T. Pattnaik and P. Kanungo, ``Adaptive window selection for non-uniform lighting image thresholding,'' \emph{Electronic Letters on Computer Vision and Image Analysis}, vol. 20, no. 1, pp. 42--54, 2021.
+
+\bibitem{pattnaik2024}
+T. Pattnaik, P. Kanungo, T. Kar, and P. K. Sahoo, ``Multiple linear regression based illumination normalization for non-uniform light image thresholding,'' \emph{e-Prime -- Advances in Electrical Engineering, Electronics and Energy}, vol. 7, 100411, 2024.
+
+\bibitem{wang2013}
+S. Wang, J. Zheng, H.-M. Hu, and B. Li, ``Naturalness preserved enhancement algorithm for non-uniform illumination images,'' \emph{IEEE Transactions on Image Processing}, vol. 22, no. 9, pp. 3538--3548, 2013.
+
+\bibitem{jiang2019kind}
+Y. Zhang, J. Zhang, and X. Guo, ``Kindling the darkness: A practical low-light image enhancer,'' \emph{ACM Multimedia}, pp. 1632--1640, 2019.
+
+\bibitem{lore2017}
+K. G. Lore, A. Akintayo, and S. Sarkar, ``LLNet: A deep autoencoder approach to natural low-light image enhancement,'' \emph{Pattern Recognition}, vol. 61, pp. 650--662, 2017.
+
+\bibitem{chen2018dark}
+C. Chen, Q. Chen, J. Xu, and V. Koltun, ``Learning to see in the dark,'' \emph{CVPR}, pp. 3291--3300, 2018.
+
+\bibitem{jiang2021enlightengan}
+Y. Jiang, X. Gong, D. Liu, Y. Cheng, C. Fang, X. Shen, J. Yang, P. Zhou, and Z. Wang, ``EnlightenGAN: Deep light enhancement without paired supervision,'' \emph{IEEE Transactions on Image Processing}, vol. 30, pp. 2340--2349, 2021.
+
+\bibitem{pspnet2017}
+H. Zhao, J. Shi, X. Qi, X. Wang, and J. Jia, ``Pyramid scene parsing network,'' \emph{CVPR}, pp. 2881--2890, 2017.
+
+\bibitem{isola2017}
+P. Isola, J.-Y. Zhu, T. Zhou, and A. A. Efros, ``Image-to-image translation with conditional adversarial networks,'' \emph{CVPR}, pp. 1125--1134, 2017.
+
+\bibitem{zhu2017}
+J.-Y. Zhu, T. Park, P. Isola, and A. A. Efros, ``Unpaired image-to-image translation using cycle-consistent adversarial networks,'' \emph{ICCV}, pp. 2223--2232, 2017.
+
+\bibitem{mikes2022}
+S. Mikes and M. Haindl, ``Texture segmentation benchmark,'' \emph{IEEE Transactions on Pattern Analysis and Machine Intelligence}, vol. 44, no. 9, pp. 5647--5663, 2022.
+
+\bibitem{kamann2021}
+C. Kamann and C. Rother, ``Benchmarking the robustness of semantic segmentation models with respect to common corruptions,'' \emph{International Journal of Computer Vision}, vol. 129, pp. 462--483, 2021.
+
+\bibitem{hendrycks2019}
+D. Hendrycks and T. Dietterich, ``Benchmarking neural network robustness to common corruptions and perturbations,'' \emph{ICLR}, 2019.
+
+\bibitem{bi2023evolutionary}
+Y. Bi, B. Xue, P. Mesejo, S. Cagnoni, and M. Zhang, ``A survey on evolutionary computation for computer vision and image analysis: Past, present, and future trends,'' \emph{IEEE Transactions on Evolutionary Computation}, vol. 27, no. 1, pp. 5--25, 2023.\
+\url{https://doi.org/10.1109/TEVC.2022.3220747}
+
+\bibitem{khan2021gp}
+A. Khan, A. S. Qureshi, N. W. Hussain, M. Y. Hamza, and others, ``A recent survey on the applications of genetic programming in image processing,'' \emph{Computational Intelligence}, vol. 37, no. 4, pp. 1745--1778, 2021.\
+\url{https://doi.org/10.1111/coin.12459}
+
+% Links for the remaining cited papers, retained from the original source.
+\noindent\textit{Paper links:}\\
+\url{https://doi.org/10.5565/rev/elcvia.1301} \quad
+\url{https://doi.org/10.1016/j.prime.2023.100411} \quad
+\url{https://doi.org/10.1016/j.jvcir.2013.06.001} \quad
+\url{https://doi.org/10.1049/iet-ipr.2012.0690}\\
+\url{https://doi.org/10.1016/j.ijleo.2014.05.003} \quad
+\url{https://doi.org/10.1016/j.jvcir.2016.10.013} \quad
+\url{https://doi.org/10.1016/j.ijleo.2019.02.118} \quad
+\url{https://doi.org/10.1109/TIP.2016.2639450}\\
+\url{https://bmvc2018.org/contents/papers/0451.pdf} \quad
+\url{https://doi.org/10.1145/3343031.3350926} \quad
+\url{https://doi.org/10.1016/j.patcog.2016.06.008} \quad
+\url{https://doi.org/10.1109/CVPR.2018.00347}\\
+\url{https://doi.org/10.1109/CVPR.2018.00347} \quad
+\url{https://doi.org/10.1109/TIP.2021.3051462} \quad
+\url{https://doi.org/10.1109/CVPR.2017.660} \quad
+\url{https://doi.org/10.1109/CVPR.2017.632}\\
+\url{https://doi.org/10.1109/ICCV.2017.244} \quad
+\url{https://doi.org/10.1109/TPAMI.2021.3075916} \quad
+\url{https://doi.org/10.1007/s11263-020-01383-2} \quad
+\url{https://openreview.net/forum?id=HJz6tiCqYm}
+
+\end{thebibliography}
+
+\end{document}
