@@ -1,0 +1,19 @@
+{
+  "experiment": "shading_stratified_45",
+  "description": "Train on 15 lower-, 15 medium-, and 15 higher-shading conditions per scene across all four scenes.",
+  "common_config": "common.json",
+  "scene_scope": "all",
+  "condition_groups": {
+    "low_shading": {"shading_indices": [1, 2, 3, 4, 5], "noise_indices": [1, 2, 3]},
+    "medium_shading": {"shading_indices": [5, 6, 7, 8, 9], "noise_indices": [6, 7, 8]},
+    "high_shading": {"shading_indices": [9, 10, 11, 12, 13], "noise_indices": [12, 13, 14]},
+    "full_grid": {"all_conditions": true}
+  },
+  "runs": [
+    {"name": "shading_stratified_45", "train_groups": ["low_shading", "medium_shading", "high_shading"], "test_groups": ["full_grid"]}
+  ],
+  "expected_training_images_per_scene": 45,
+  "expected_training_images_total": 180,
+  "allow_train_test_overlap": true,
+  "note": "The full-grid test output is post-evolution evaluation and must not be used for fitness or elite selection."
+}

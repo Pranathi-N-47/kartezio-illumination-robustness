@@ -11,12 +11,16 @@ from projects.illumination_robustness.evolution.experiment_runner import image_i
 
 def main() -> int:
     p = argparse.ArgumentParser(); p.add_argument("--config", type=Path, required=True); p.add_argument("--common-config", type=Path, required=True)
-    p.add_argument("--output-root", type=Path, required=True); p.add_argument("--rotation"); p.add_argument("--seed", type=int); p.add_argument("--generations", type=int); p.add_argument("--smoke", action="store_true")
+    p.add_argument("--output-root", type=Path, required=True); p.add_argument("--rotation"); p.add_argument("--seed", type=int); p.add_argument("--generations", type=int); p.add_argument("--population-size", type=int); p.add_argument("--fitness-objective", choices=["qseg", "hybrid_dice_count"], default=None); p.add_argument("--mutation-node-rate", type=float); p.add_argument("--mutation-output-rate", type=float); p.add_argument("--smoke", action="store_true")
     a = p.parse_args(); cfg = json.loads(a.config.read_text()); common = json.loads(a.common_config.read_text()); config = {**common, **cfg}
     conditions = [(b, n) for b in info.SHADING_LEVELS for n in info.NOISE_LEVELS]
     rotations = cfg["rotations"]
     if a.rotation: rotations = [r for r in rotations if r["name"] == a.rotation]
     if a.rotation and not rotations: p.error(f"Unknown rotation: {a.rotation}")
+    if a.fitness_objective: common["fitness_objective"] = a.fitness_objective
+    if a.mutation_node_rate is not None: common["mutation_node_rate"] = a.mutation_node_rate
+    if a.mutation_output_rate is not None: common["mutation_output_rate"] = a.mutation_output_rate
+    if a.population_size is not None: common["population_size"] = a.population_size
     seeds = [a.seed] if a.seed is not None else common["seeds"]
     generations = a.generations or (5 if a.smoke else common["generations"])
     for rotation in rotations:

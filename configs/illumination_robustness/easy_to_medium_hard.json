@@ -1,16 +1,75 @@
 {
   "experiment": "easy_to_medium_hard",
-  "description": "Train on easy conditions and evaluate separately on medium and hard conditions.",
+  "description": "Train on easy conditions and evaluate on medium and hard conditions. The groups partition all 182 conditions per scene.",
   "common_config": "common.json",
   "scene_scope": "all",
   "condition_groups": {
-    "easy": {"shading_indices": [1, 2, 3, 4], "noise_indices": [1, 2, 3, 4, 5]},
-    "medium": {"shading_indices": [5, 6, 7, 8], "noise_indices": [6, 7, 8, 9, 10]},
-    "hard": {"shading_indices": [9, 10, 11, 12, 13], "noise_indices": [11, 12, 13, 14]}
+    "easy": {
+      "difficulty_definition": "((b-1)/12 + (n-1)/13)/2",
+      "difficulty_min_exclusive": null,
+      "difficulty_max": 0.3333333333333333,
+      "shading_indices": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "noise_indices": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "medium": {
+      "difficulty_definition": "((b-1)/12 + (n-1)/13)/2",
+      "difficulty_min_exclusive": 0.3333333333333333,
+      "difficulty_max": 0.6666666666666666,
+      "shading_indices": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "noise_indices": [
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    "hard": {
+      "difficulty_definition": "((b-1)/12 + (n-1)/13)/2",
+      "difficulty_min_exclusive": 0.6666666666666666,
+      "difficulty_max": null,
+      "shading_indices": [
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "noise_indices": [
+        11,
+        12,
+        13,
+        14
+      ]
+    }
   },
   "runs": [
-    {"name": "easy_to_medium", "train_groups": ["easy"], "test_groups": ["medium"]},
-    {"name": "easy_to_hard", "train_groups": ["easy"], "test_groups": ["hard"]}
+    {
+      "name": "easy_to_medium_hard",
+      "train_groups": [
+        "easy"
+      ],
+      "test_groups": [
+        "medium",
+        "hard"
+      ]
+    }
   ],
-  "expected_images_per_scene_per_group": 20
+  "expected_images_per_scene_per_group": {"easy": 45, "medium": 93, "hard": 44}
 }

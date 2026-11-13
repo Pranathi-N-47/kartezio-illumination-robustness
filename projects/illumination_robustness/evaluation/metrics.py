@@ -250,36 +250,44 @@ def paper_q_seg(
         )
 
     # 4. Sequential BLOB matching [S4, Eq. 1]
-    # Remaining active GT BLOB labels:
-    active_gt: Set[int] = set(range(1, n_gt + 1))
+    # Build the predicted/GT overlap table once. The previous implementation
+    # repeatedly created a full-image boolean mask and called np.unique for
+    # every predicted BLOB. This contingency table contains the same counts
+    # while scanning the labelled images only once.
+    n_gt_plus_background = n_gt + 1
+    pair_codes = pred_labels.astype(np.int64, copy=False).ravel() * n_gt_plus_background + gt_labels.ravel()
+    overlap_table = np.bincount(
+        pair_codes,
+        minlength=(n_pred + 1) * n_gt_plus_background,
+    ).reshape((n_pred + 1, n_gt_plus_background))
+
+    # Remaining active GT blob labels. A boolean array is faster than a set and
+    # preserves the same sequential removal rule.
+    active_gt = np.ones(n_gt_plus_background, dtype=bool)
+    active_gt[0] = False
     matched_count = 0
 
     # For each predicted BLOB u = 1..n_pred
     for u in range(1, n_pred + 1):
-        # Coordinates belonging to BLOB S_u
-        s_u_mask = pred_labels == u
-        c_u = int(np.count_nonzero(s_u_mask))
+        overlap_row = overlap_table[u]
+        c_u = int(np.sum(overlap_row))
         if c_u == 0:
             continue
 
-        # Overlap with ground truth labels
-        overlapping_gt_pixels = gt_labels[s_u_mask]
-        # Only consider active GT blobs
-        nonzero_overlaps = [lbl for lbl in overlapping_gt_pixels if lbl in active_gt]
-
-        if not nonzero_overlaps:
+        # Only consider currently active, non-background GT blobs.
+        active_overlaps = overlap_row.copy()
+        active_overlaps[~active_gt] = 0
+        labels_arr = np.flatnonzero(active_overlaps)
+        if labels_arr.size == 0:
             continue
 
-        # Count occurrences per active GT blob
-        labels_arr, counts = np.unique(nonzero_overlaps, return_counts=True)
-        max_overlap = int(np.max(counts))
+        max_overlap = int(np.max(active_overlaps[labels_arr]))
 
         # Check threshold condition: max(card(S_u ∩ T_z)) > (1/3) * C_u
         if max_overlap > overlap_threshold * c_u:
             matched_count += 1
             # Remove all overlapping GT BLOBs from active set [S4, Eq. 1 & text]
-            for lbl in labels_arr:
-                active_gt.discard(int(lbl))
+            active_gt[labels_arr] = False
 
     q1 = float(abs(n_gt - matched_count) / n_gt)
     mu1 = fuzzy_zmf(q1, s=2.0, alpha=0.0, beta=1.0)

@@ -44,6 +44,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--generations", type=int, default=5)
     parser.add_argument("--nodes", type=int, default=8)
+    parser.add_argument("--population-size", type=int, default=16)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--fixture-dir", type=Path, default=Path("results/pilot_fixtures"))
     parser.add_argument("--output-dir", type=Path, default=Path("results/pilot_test"))
@@ -62,6 +63,7 @@ def main() -> int:
         fitness=PilotTestQSegFitness(),
     )
     trainer.set_mutation_rates(node_rate=0.05, out_rate=0.1)
+    trainer.set_n_children(args.population_size)
     elite, history = trainer.fit(args.generations, x_train, y_train)
     train_scores = trainer.evaluate(x_train, y_train)
     test_scores = trainer.evaluate(x_test, y_test)

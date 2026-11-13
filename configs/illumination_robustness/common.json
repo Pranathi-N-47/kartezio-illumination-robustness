@@ -1,8 +1,8 @@
 {
   "benchmark_root": "hardware_items",
   "primitive_set": "illumination_core_v1",
-  "nodes": 16,
-  "population_size": 32,
+  "nodes": 8,
+  "population_size": 16,
   "generations": 500,
   "mutation_node_rate": 0.05,
   "mutation_output_rate": 0.10,

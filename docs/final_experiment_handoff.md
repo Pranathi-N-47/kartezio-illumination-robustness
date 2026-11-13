@@ -7,9 +7,9 @@ This document defines the remaining experiments for the illumination-robustness 
 All runs use the same implementation and evaluation protocol:
 
 - Seeds: `7`, `123`, and `31415`.
-- Population size: `32` total candidates. In Kartezio this should be configured with `trainer.set_n_children(32)` so the strategy maintains one parent and 31 offspring.
+- Population size: `16` total candidates. In Kartezio this should be configured with `trainer.set_n_children(16)` so the strategy maintains one parent and 15 offspring.
 - Generations: `500` for every primary run.
-- Graph capacity: `16` nodes maximum; inactive nodes are allowed.
+- Graph capacity: `8` nodes maximum; inactive nodes are allowed.
 - Mutation rates: node rate `0.05`, output/connection rate `0.10`.
 - Connectivity: 8-connected components for object counting and matching.
 - Endpoint: fixed binary endpoint using threshold `128`. Internal operations and thresholds may still evolve, but the final output must be a binary mask.
@@ -98,28 +98,29 @@ Run every rotation with all three seeds: 18 runs total. IDs must include the sce
 
 These runs use all four scenes in both training and testing, but condition IDs must be disjoint. They measure transfer across degradation levels rather than scene generalisation.
 
-Use these deterministic groups for every scene:
+Use this deterministic difficulty score for every condition:
 
-- Easy: `b ∈ {1,2,3,4}` and `n ∈ {1,2,3,4,5}`.
-- Medium: `b ∈ {5,6,7,8}` and `n ∈ {6,7,8,9,10}`.
-- Hard: `b ∈ {9,10,11,12,13}` and `n ∈ {11,12,13,14}`.
+```text
+difficulty(b,n) = ((b-1)/12 + (n-1)/13) / 2
+```
 
-Each group contains 20 conditions per scene and 80 images across four scenes. The full benchmark grid remains available for scene-holdout experiments; these groups are the fixed transfer subsets and must not be changed after runs begin.
+Assign every one of the 182 conditions per scene as follows:
+
+- Easy: `difficulty <= 1/3` — 45 conditions per scene.
+- Medium: `1/3 < difficulty <= 2/3` — 93 conditions per scene.
+- Hard: `difficulty > 2/3` — 44 conditions per scene.
+
+This partition uses all 182 conditions per scene, with no omissions or overlaps. Across four scenes, the groups contain 180 Easy, 372 Medium, and 176 Hard images. The full benchmark grid remains available for scene-holdout experiments, while these groups provide a complete deterministic condition-transfer partition.
 
 ### C1: Easy to medium and hard
 
-Train on Easy. Run two separate evaluations using the same evolved pipeline:
-
-1. Test on Medium: 80 training images and 80 test images.
-2. Test on Hard: 80 training images and 80 test images.
-
-Use IDs `easy_to_medium_seed7`, `easy_to_medium_seed123`, `easy_to_medium_seed31415`, and the corresponding `easy_to_hard_*` IDs. This is 6 runs total.
+Train once on Easy and test the same saved elite pipeline on the combined Medium+Hard set. This uses 180 training images and 548 test images. Report the combined test result and separate Medium and Hard summaries from the per-image results. Use IDs `easy_to_medium_hard_seed7`, `easy_to_medium_hard_seed123`, and `easy_to_medium_hard_seed31415`. This is 3 runs total.
 
 ### C2: Easy plus medium to hard
 
-Train on Easy plus Medium, then test on Hard. This uses 160 training images and 80 test images. Use IDs `easy_medium_to_hard_seed7`, `easy_medium_to_hard_seed123`, and `easy_medium_to_hard_seed31415`. This is 3 runs total.
+Train on Easy plus Medium, then test on Hard. This uses 552 training images and 176 test images. Use IDs `easy_medium_to_hard_seed7`, `easy_medium_to_hard_seed123`, and `easy_medium_to_hard_seed31415`. This is 3 runs total.
 
-The complete planned set is therefore 39 runs: 12 one-scene holdout, 18 two-scene holdout, 6 Easy-to-Medium/Hard, and 3 Easy+Medium-to-Hard.
+The complete planned set is therefore 36 runs: 12 one-scene holdout, 18 two-scene holdout, 3 Easy-to-Medium+Hard, and 3 Easy+Medium-to-Hard.
 
 ## Robustness reporting
 
@@ -166,6 +167,24 @@ results/final/scene_holdout_one/
 results/final/scene_holdout_two/
 results/final/easy_to_hard/
 ```
+
+For the current one-scene Easy-to-Medium+Hard rotations, use this canonical location:
+
+```text
+results/final/easy_to_hard_scene_rotations/
+  easy_to_medium_hard_train1_seed7/
+  easy_to_medium_hard_train2_seed7/
+  easy_to_medium_hard_train3_seed7/
+  easy_to_medium_hard_train4_seed7/
+```
+
+The run-name convention is:
+
+```text
+<experiment>_train<scene>_seed<seed>/
+```
+
+For example, `easy_to_medium_hard_train1_seed7` means that Easy images from scene 1 were used for evolution, while the combined Medium+Hard test set was evaluated across scenes 1--4. Additional seeds use the same directory with only the seed suffix changed. Do not create nested output roots with the same experiment name.
 
 The run directory is the authoritative record. `config.json` is the resolved configuration, not only the template. `split.json` must contain the experiment name, run ID, seed, training and test scenes, condition rules, explicit training and test image IDs, and validation results. `metadata.json` must include the commit identifier, timestamp, Python/package versions, primitive-set version, node capacity, population, generations, mutation rates, endpoint, metric protocol, and completion status.
 
@@ -257,7 +276,7 @@ python scripts/run_easy_to_hard.py `
   --run easy_to_medium `
   --seed 7 `
   --generations 5 `
-  --output-root results/final/easy_to_hard `
+  --output-root results/final/easy_to_medium_hard `
   --smoke
 ```
 
@@ -289,7 +308,7 @@ python scripts/run_scene_holdout.py `
 
 This creates 18 runs under `results/final/scene_holdout_two/`.
 
-### Full Easy-to-Medium and Easy-to-Hard runs
+### Full Easy-to-Medium+Hard run
 
 Run both condition-transfer experiments for all three seeds:
 
@@ -300,7 +319,7 @@ python scripts/run_easy_to_hard.py `
   --output-root results/final/easy_to_hard
 ```
 
-This creates six runs: three Easy-to-Medium and three Easy-to-Hard.
+This creates three runs: each is trained on Easy and tested on the combined Medium+Hard set.
 
 ### Full Easy+Medium-to-Hard runs
 
@@ -380,4 +399,147 @@ python scripts/reevaluate_pipeline.py `
   --check-original-metrics
 ```
 
-The aggregate step must clearly report incomplete runs or missing artifacts. A final comparison should be made only from the saved per-image CSV files and the artifact re-evaluation check. The current re-evaluation utility checks the saved elite, split, metadata, and per-image metric files; numerical regeneration of predictions should be added before treating the final audit as complete.
+The aggregate step must clearly report incomplete runs or missing artifacts. A final comparison should be made only from the saved per-image CSV files and the re-evaluation outputs. `reevaluate_pipeline.py --run <run_id>` reconstructs the saved elite and regenerates exact full-grid predictions and metrics; without `--run`, the utility performs artifact validation.
+
+## Current scene-rotation run protocol
+
+The current feasibility runs use the selectable hybrid fitness objective:
+
+```text
+L_hybrid = 0.8(1 - Dice) + 0.2(object-count error)
+```
+
+The shared configuration remains population `16`, but the current scene-rotation comparison overrides this to population `32` at the command line. The current comparison settings are:
+
+```text
+Nodes: 8
+Population: 32
+Generations: 50
+Seed: 7
+Mutation node rate: 0.20
+Mutation output rate: 0.20
+Fitness: hybrid_dice_count
+Training: Easy images from one selected scene
+Testing: Medium+Hard images from scenes 1--4
+```
+
+Run all four rotations with:
+
+```powershell
+foreach ($scene in 1,2,3,4) {
+  python scripts/run_easy_to_hard.py `
+    --config configs/illumination_robustness/easy_to_medium_hard.json `
+    --common-config configs/illumination_robustness/common.json `
+    --run easy_to_medium_hard `
+    --train-scenes $scene `
+    --test-scenes 1,2,3,4 `
+    --seed 7 `
+    --generations 50 `
+    --population-size 32 `
+    --fitness-objective hybrid_dice_count `
+    --mutation-node-rate 0.20 `
+    --mutation-output-rate 0.20 `
+    --output-root results/final/easy_to_hard_scene_rotations_hybrid_v2
+}
+```
+
+The corresponding result layout is:
+
+```text
+results/final/easy_to_hard_scene_rotations_hybrid_v2/
+  easy_to_medium_hard_train1_seed7/
+  easy_to_medium_hard_train2_seed7/
+  easy_to_medium_hard_train3_seed7/
+  easy_to_medium_hard_train4_seed7/
+```
+
+The earlier completed rotation results are stored in:
+
+```text
+results/final/easy_to_hard_scene_rotations/
+```
+
+## Full-grid evaluation of saved elites
+
+After evolution, each saved elite can be evaluated on all 728 benchmark images. This evaluation does not change the elite or its fitness. It writes `metrics/full_grid.csv` and `metrics/full_grid_summary.json` inside the selected run directory.
+
+```powershell
+$root = "results/final/easy_to_hard_scene_rotations"
+foreach ($run in `
+  "easy_to_medium_hard_train1_seed7",
+  "easy_to_medium_hard_train2_seed7",
+  "easy_to_medium_hard_train3_seed7",
+  "easy_to_medium_hard_train4_seed7"
+) {
+  python scripts/reevaluate_pipeline.py `
+    --input-root $root `
+    --run $run
+}
+```
+
+Full-grid outputs are stored at:
+
+```text
+results/final/easy_to_hard_scene_rotations/<run_id>/metrics/full_grid.csv
+results/final/easy_to_hard_scene_rotations/<run_id>/metrics/full_grid_summary.json
+```
+
+Full-grid scores must be reported separately from the held-out Medium+Hard scores because they include conditions related to the evolution training split. They are used for complete benchmark coverage and comparison with the 728-image baseline results.
+
+## Shading-stratified 45-image-per-scene experiment
+
+Configuration:
+
+```text
+configs/illumination_robustness/shading_stratified_45.json
+```
+
+Each scene contributes 45 training conditions:
+
+```text
+15 lower-shading:  b = 1..5,  n = 1..3
+15 medium-shading: b = 5..9,  n = 6..8
+15 higher-shading: b = 9..13, n = 12..14
+```
+
+All four scenes contribute 180 training images. Run it with:
+
+```powershell
+python scripts/run_easy_to_hard.py `
+  --config configs/illumination_robustness/shading_stratified_45.json `
+  --common-config configs/illumination_robustness/common.json `
+  --run shading_stratified_45 `
+  --seed 7 `
+  --generations 50 `
+  --population-size 32 `
+  --fitness-objective hybrid_dice_count `
+  --mutation-node-rate 0.20 `
+  --mutation-output-rate 0.20 `
+  --output-root results/final/shading_stratified_45
+```
+
+Results are stored in `results/final/shading_stratified_45/shading_stratified_45_seed7/`. The full-grid test output is post-evolution evaluation only and must not influence fitness or elite selection.
+
+## Shading and noise sensitivity analysis
+
+After full-grid evaluation, analyze each elite by shading level and noise level:
+
+```powershell
+python scripts/analyze_condition_sensitivity.py `
+  --results-root results/final/easy_to_hard_scene_rotations
+```
+
+The analysis reads each run's `metrics/full_grid.csv` and writes:
+
+```text
+results/final/easy_to_hard_scene_rotations/sensitivity_analysis/
+  by_shading.csv
+  by_noise.csv
+  by_scene_shading.csv
+  by_scene_noise.csv
+  qseg_by_shading.png
+  qseg_by_noise.png
+  summary.json
+```
+
+The tables report mean and standard deviation for Dice, IoU, `Q_seg`, and count error. The scene-specific tables allow sensitivity to be separated from scene difficulty. A sharper decline across shading levels indicates illumination sensitivity; a sharper decline across noise levels indicates noise sensitivity. Use the same image coverage for every pipeline when comparing these curves.
