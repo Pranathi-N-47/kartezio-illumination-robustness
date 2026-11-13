@@ -1,0 +1,5 @@
+Elite pipeline: shading_stratified_45_train1_seed7
+Active nodes: 3 / 8
+node 1: Close edges=[0] params=[253, 177]
+node 4: Normalize edges=[1] params=[223, 157]
+node 8: Inverse edges=[4] params=[130, 168]

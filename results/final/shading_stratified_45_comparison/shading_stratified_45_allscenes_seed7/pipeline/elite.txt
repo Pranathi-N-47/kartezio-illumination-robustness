@@ -1,0 +1,7 @@
+Elite pipeline: shading_stratified_45_allscenes_seed7
+Active nodes: 5 / 8
+node 1: Dilate edges=[0] params=[149, 161]
+node 2: InRange edges=[1] params=[163, 34]
+node 3: RmSmallObjects edges=[2] params=[92, 255]
+node 6: Fill edges=[3] params=[191, 123]
+node 7: Dilate edges=[6] params=[154, 185]

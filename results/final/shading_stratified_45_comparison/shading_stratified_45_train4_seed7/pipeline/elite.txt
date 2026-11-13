@@ -1,0 +1,6 @@
+Elite pipeline: shading_stratified_45_train4_seed7
+Active nodes: 4 / 8
+node 1: Close edges=[0] params=[160, 1]
+node 2: OtsuThreshold edges=[1] params=[183, 233]
+node 5: Open edges=[2] params=[241, 229]
+node 8: Inverse edges=[5] params=[20, 83]

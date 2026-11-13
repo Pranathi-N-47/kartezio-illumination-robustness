@@ -1,0 +1,11 @@
+{
+  "run_id": "shading_stratified_45_train1_seed7",
+  "experiment": "shading_stratified_45",
+  "seed": 7,
+  "train_q_seg": 0.5310014589175114,
+  "test_q_seg": 0.35715054339442326,
+  "test_dice": 0.579694869647289,
+  "test_iou": 0.4613194890693113,
+  "active_nodes": 3,
+  "history_length": 51
+}

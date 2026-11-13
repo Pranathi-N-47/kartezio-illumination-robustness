@@ -182,4 +182,9 @@ cython_debug/
 
 emissions.csv.bak
 
+# Keep final experiment artifacts under version control.
+!results/
+!results/final/
+!results/final/**
+
 Kartezio.code-workspace

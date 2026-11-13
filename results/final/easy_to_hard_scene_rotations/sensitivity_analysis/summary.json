@@ -1,0 +1,17 @@
+{
+  "source_images": 2912,
+  "runs": [
+    "easy_to_medium_hard_train1_seed7",
+    "easy_to_medium_hard_train2_seed7",
+    "easy_to_medium_hard_train3_seed7",
+    "easy_to_medium_hard_train4_seed7"
+  ],
+  "outputs": [
+    "by_shading.csv",
+    "by_noise.csv",
+    "by_scene_shading.csv",
+    "by_scene_noise.csv",
+    "qseg_by_shading.png",
+    "qseg_by_noise.png"
+  ]
+}

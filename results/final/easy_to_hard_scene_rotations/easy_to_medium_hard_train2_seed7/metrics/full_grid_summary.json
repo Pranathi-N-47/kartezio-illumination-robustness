@@ -1,0 +1,8 @@
+{
+  "run_id": "easy_to_medium_hard_train2_seed7",
+  "images": 728,
+  "dice": 0.6732653246119368,
+  "iou": 0.5712647510824479,
+  "q_seg": 0.5319854547825367,
+  "count_error": 55.11228946706888
+}
