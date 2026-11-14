@@ -1,0 +1,11 @@
+{
+  "run_id": "easy_to_medium_hard_allscenes_seed7",
+  "experiment": "easy_to_medium_hard",
+  "seed": 7,
+  "train_q_seg": 0.7484872865561406,
+  "test_q_seg": 0.4463699740664397,
+  "test_dice": 0.5922180182984361,
+  "test_iou": 0.48824402177553267,
+  "active_nodes": 4,
+  "history_length": 51
+}

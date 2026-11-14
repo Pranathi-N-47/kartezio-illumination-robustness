@@ -1,0 +1,6 @@
+Elite pipeline: easy_to_medium_hard_allscenes_seed7
+Active nodes: 4 / 8
+node 1: OtsuThreshold edges=[0] params=[23, 177]
+node 2: MedianBlur edges=[1] params=[247, 230]
+node 3: Open edges=[2] params=[3, 85]
+node 7: Inverse edges=[3] params=[53, 163]

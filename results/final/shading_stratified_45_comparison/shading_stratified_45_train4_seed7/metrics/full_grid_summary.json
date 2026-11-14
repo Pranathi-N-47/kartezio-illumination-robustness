@@ -1,0 +1,8 @@
+{
+  "run_id": "shading_stratified_45_train4_seed7",
+  "images": 728,
+  "dice": 0.7563205837071665,
+  "iou": 0.6546387521586076,
+  "q_seg": 0.5868834253303237,
+  "count_error": 0.9795466493774049
+}

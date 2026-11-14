@@ -1,0 +1,8 @@
+{
+  "run_id": "shading_stratified_45_allscenes_seed7",
+  "images": 728,
+  "dice": 0.49460603954212506,
+  "iou": 0.39062675531710495,
+  "q_seg": 0.2615935601805682,
+  "count_error": 0.5386670574138881
+}
