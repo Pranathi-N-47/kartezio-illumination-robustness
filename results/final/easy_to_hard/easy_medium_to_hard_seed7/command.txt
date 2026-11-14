@@ -1,0 +1,1 @@
+scripts/run_easy_to_hard.py --config configs/illumination_robustness/easy_medium_to_hard.json --common-config configs/illumination_robustness/common.json --run easy_medium_to_hard --seed 7 --generations 5 --output-root results/final/easy_to_hard --smoke
