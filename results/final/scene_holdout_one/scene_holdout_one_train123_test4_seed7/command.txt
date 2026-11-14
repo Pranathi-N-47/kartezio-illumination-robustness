@@ -1,0 +1,1 @@
+.\scripts\run_scene_holdout.py --config .\configs\illumination_robustness\scene_holdout_one.json --common-config .\configs\illumination_robustness\common.json --rotation train123_test4 --seed 7 --generations 5 --output-root .\results\final\scene_holdout_one --smoke

@@ -1,0 +1,21 @@
+{
+  "benchmark_root": "hardware_items",
+  "primitive_set": "illumination_core_v1",
+  "nodes": 16,
+  "population_size": 32,
+  "generations": 5,
+  "mutation_node_rate": 0.05,
+  "mutation_output_rate": 0.1,
+  "endpoint": "threshold_128",
+  "metric_protocol": "paper_q_seg_v1",
+  "loss": "1 - mean_q_seg",
+  "connectivity": 8,
+  "classification": false,
+  "seeds": [
+    7,
+    123,
+    31415
+  ],
+  "seed": 7,
+  "smoke": true
+}

@@ -1,0 +1,136 @@
+{
+  "available_nodes": 8,
+  "active_nodes": 6,
+  "nodes": [
+    {
+      "node": 1,
+      "primitive": "Inverse",
+      "edges": [
+        0
+      ],
+      "parameters": [
+        214,
+        179
+      ]
+    },
+    {
+      "node": 2,
+      "primitive": "Open",
+      "edges": [
+        1
+      ],
+      "parameters": [
+        61,
+        184
+      ]
+    },
+    {
+      "node": 3,
+      "primitive": "OtsuThreshold",
+      "edges": [
+        2
+      ],
+      "parameters": [
+        249,
+        118
+      ]
+    },
+    {
+      "node": 4,
+      "primitive": "Identity",
+      "edges": [
+        3
+      ],
+      "parameters": [
+        202,
+        51
+      ]
+    },
+    {
+      "node": 7,
+      "primitive": "ClearBorder",
+      "edges": [
+        4
+      ],
+      "parameters": [
+        168,
+        247
+      ]
+    },
+    {
+      "node": 8,
+      "primitive": "Open",
+      "edges": [
+        7
+      ],
+      "parameters": [
+        9,
+        242
+      ]
+    }
+  ],
+  "outputs": [
+    8
+  ],
+  "genotype": {
+    "chromosomes": {
+      "chromosome_0": {
+        "sequence": {
+          "outputs": [
+            8
+          ],
+          "matrix": [
+            [
+              1,
+              0,
+              214,
+              179
+            ],
+            [
+              11,
+              1,
+              61,
+              184
+            ],
+            [
+              5,
+              2,
+              249,
+              118
+            ],
+            [
+              0,
+              3,
+              202,
+              51
+            ],
+            [
+              12,
+              0,
+              239,
+              207
+            ],
+            [
+              1,
+              5,
+              122,
+              47
+            ],
+            [
+              15,
+              4,
+              168,
+              247
+            ],
+            [
+              11,
+              7,
+              9,
+              242
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
