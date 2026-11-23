@@ -68,7 +68,7 @@ def main() -> int:
     failures = []
     for run in sorted(p for p in a.input_root.rglob("config.json") if p.parent.name != "aggregate"):
         root = run.parent
-        required = [root / "split.json", root / "metadata.json", root / "pipeline" / "elite.json", root / "pipeline" / "elite.txt", root / "metrics" / "train_per_image.csv", root / "metrics" / "test_per_image.csv"]
+        required = [root / "split.json", root / "metadata.json", root / "pipeline" / "elite.json", root / "pipeline" / "elite.txt", root / "metrics" / "train_per_image.csv"]
         missing = [str(x) for x in required if not x.is_file()]
         if missing: failures.append({"run": str(root), "missing": missing}); continue
         try: json.loads((root / "pipeline" / "elite.json").read_text(encoding="utf-8")); json.loads((root / "split.json").read_text(encoding="utf-8"))

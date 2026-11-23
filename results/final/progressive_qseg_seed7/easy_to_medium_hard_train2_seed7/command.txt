@@ -1,0 +1,1 @@
+scripts\run_easy_to_hard.py --config configs\illumination_robustness\easy_to_medium_hard.json --common-config configs\illumination_robustness\common.json --output-root results\final\progressive_qseg_seed7 --run easy_to_medium_hard --seed 7 --generations 50 --population-size 32 --fitness-objective qseg --train-scenes 2

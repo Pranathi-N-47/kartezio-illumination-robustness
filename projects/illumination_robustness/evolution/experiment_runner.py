@@ -123,6 +123,59 @@ def write_csv(path: Path, rows: list[dict]) -> None:
         writer.writeheader(); writer.writerows(rows)
 
 
+def evaluate_full_grid(trainer, dataset: BenchmarkDataset, run_id: str, seed: int,
+                       config: dict, output: Path) -> None:
+    """Evaluate the exported elite on every benchmark image exactly once."""
+    rows = []
+    for scene in info.SCENES:
+        ids = image_ids([scene], [(b, n) for b in info.SHADING_LEVELS for n in info.NOISE_LEVELS])
+        x, _, samples = load_items(dataset, ids)
+        predictions, _ = trainer.model.predict(x)
+        for prediction, sample in zip(predictions, samples):
+            result = evaluate_prediction(
+                prediction[0], sample.ground_truth, sample.image_id,
+                sample.shading, sample.noise, connectivity=8,
+            )
+            rows.append(result.to_csv_row(
+                run_id=run_id, method="evolved_full_grid", seed=seed,
+                split_id="full_grid_728", pipeline_id=run_id,
+                metric_protocol=config["metric_protocol"],
+            ))
+    write_csv(output / "metrics" / "full_grid.csv", rows)
+    summary = {
+        "run_id": run_id,
+        "images": len(rows),
+        "dice": float(np.mean([float(r["dice"]) for r in rows])),
+        "iou": float(np.mean([float(r["iou"]) for r in rows])),
+        "q_seg": float(np.mean([float(r["q_seg"]) for r in rows])),
+        "count_error": float(np.mean([float(r["custom_count_error"]) for r in rows])),
+    }
+    (output / "metrics" / "full_grid_summary.json").write_text(
+        json.dumps(summary, indent=2), encoding="utf-8"
+    )
+    series = []
+    for scene in info.SCENES:
+        values = []
+        for shading in range(1, 14):
+            noise = shading + 1
+            match = next(r for r in rows if int(r["scene"]) == scene
+                         and int(r["shading"]) == shading and int(r["noise"]) == noise)
+            value = float(match["q_seg"])
+            values.append(value)
+            series.append({"run_id": run_id, "scene": scene, "shading": shading,
+                           "noise": noise, "q_seg": value})
+        series.append({"run_id": run_id, "scene": scene, "shading": "mean",
+                       "noise": "mean", "q_seg": float(np.mean(values))})
+    write_csv(output / "metrics" / "robustness_series.csv", series)
+    scene_means = [float(r["q_seg"]) for r in series if r["shading"] == "mean"]
+    (output / "metrics" / "robustness_summary.json").write_text(json.dumps({
+        "run_id": run_id, "series_images_per_scene": 13,
+        "scenes": len(scene_means), "r_seg_mean": float(np.mean(scene_means)),
+        "r_seg_std": float(np.std(scene_means)),
+        "r_seg_by_scene": {str(i + 1): value for i, value in enumerate(scene_means)},
+    }, indent=2), encoding="utf-8")
+
+
 def run_experiment(*, run_id: str, experiment: str, config: dict, benchmark_root: Path,
                    train_ids: list[str], test_ids: list[str], output: Path, seed: int,
                    generations: int | None = None, smoke: bool = False,
@@ -142,10 +195,10 @@ def run_experiment(*, run_id: str, experiment: str, config: dict, benchmark_root
              "train_count": len(train_ids), "test_count": len(test_ids)}
     (output / "split.json").write_text(json.dumps(split, indent=2), encoding="utf-8")
     (output / "command.txt").write_text(" ".join(sys.argv), encoding="utf-8")
-    print(f"[{run_id}] loading benchmark samples: train={len(train_ids)}, test={len(test_ids)}", flush=True)
+    print(f"[{run_id}] loading fitness samples: train={len(train_ids)}; "
+          f"configured transfer conditions={len(test_ids)} (recorded only)", flush=True)
     dataset = BenchmarkDataset(benchmark_root)
     x_train, y_train, _ = load_items(dataset, train_ids)
-    x_test, y_test, test_samples = load_items(dataset, test_ids)
     print(f"[{run_id}] samples loaded; initializing Kartezio population={config['population_size']}, nodes={config['nodes']}", flush=True)
     np.random.seed(seed)
     objective = config.get("fitness_objective", "qseg")
@@ -173,26 +226,32 @@ def run_experiment(*, run_id: str, experiment: str, config: dict, benchmark_root
     text = [f"Elite pipeline: {run_id}", f"Active nodes: {record['active_nodes']} / {record['available_nodes']}"]
     text.extend(f"node {n['node']}: {n['primitive']} edges={n['edges']} params={n['parameters']}" for n in record["nodes"])
     (output / "pipeline" / "elite.txt").write_text("\n".join(text) + "\n", encoding="utf-8")
-    print(f"[{run_id}] evaluating train and test predictions", flush=True)
+    print(f"[{run_id}] evaluating training predictions", flush=True)
     evaluation_started = time.perf_counter()
     train_pred, _ = trainer.model.predict(x_train)
-    test_pred, _ = trainer.model.predict(x_test)
     rows = []
-    for split_name, preds, samples in (("train", train_pred, load_items(dataset, train_ids)[2]), ("test", test_pred, test_samples)):
-        for pred, sample in zip(preds, samples):
-            result = evaluate_prediction(pred[0], sample.ground_truth, sample.image_id, sample.shading, sample.noise, connectivity=8)
-            row = result.to_csv_row(run_id=run_id, method="evolved", seed=seed, split_id=run_id,
-                                    pipeline_id=run_id, metric_protocol=config["metric_protocol"])
-            row["split"] = split_name; rows.append(row)
+    train_samples = load_items(dataset, train_ids)[2]
+    for pred, sample in zip(train_pred, train_samples):
+        result = evaluate_prediction(pred[0], sample.ground_truth, sample.image_id,
+                                     sample.shading, sample.noise, connectivity=8)
+        row = result.to_csv_row(run_id=run_id, method="evolved", seed=seed,
+                                split_id=run_id, pipeline_id=run_id,
+                                metric_protocol=config["metric_protocol"])
+        row["split"] = "train"
+        rows.append(row)
     write_csv(output / "metrics" / "all_per_image.csv", rows)
     write_csv(output / "metrics" / "train_per_image.csv", [r for r in rows if r["split"] == "train"])
-    write_csv(output / "metrics" / "test_per_image.csv", [r for r in rows if r["split"] == "test"])
-    test_q = [float(r["q_seg"]) for r in rows if r["split"] == "test"]
     summary = {"run_id": run_id, "experiment": experiment, "seed": seed,
                "train_q_seg": float(np.mean([r["q_seg"] for r in rows if r["split"] == "train"])),
-               "test_q_seg": float(np.mean(test_q)), "test_dice": float(np.mean([r["dice"] for r in rows if r["split"] == "test"])),
-               "test_iou": float(np.mean([r["iou"] for r in rows if r["split"] == "test"])),
                "active_nodes": record["active_nodes"], "history_length": len(history)}
+    (output / "metrics" / "aggregate_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    print(f"[{run_id}] evaluating elite on full 728-image grid", flush=True)
+    evaluate_full_grid(trainer, dataset, run_id, seed, config, output)
+    full_summary = json.loads((output / "metrics" / "full_grid_summary.json").read_text(encoding="utf-8"))
+    rseg_summary = json.loads((output / "metrics" / "robustness_summary.json").read_text(encoding="utf-8"))
+    summary.update({"full_grid_images": full_summary["images"],
+                    "full_grid_q_seg": full_summary["q_seg"],
+                    "full_grid_r_seg": rseg_summary["r_seg_mean"]})
     (output / "metrics" / "aggregate_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     fitness = [float(state.get_best_fitness()[1]) for state in history]
     plt.figure(figsize=(7, 4)); plt.plot(fitness); plt.xlabel("Generation"); plt.ylabel("Best training loss"); plt.tight_layout(); plt.savefig(output / "figures" / "fitness_history.png", dpi=150); plt.close()

@@ -22,15 +22,15 @@ RUN_ROOT = ROOT / "results" / "final" / "easy_to_hard_scene_rotations"
 def main():
     dataset = BenchmarkDataset(ROOT / "hardware_items")
     trainers = []
-    for train_scene, label in [(1, "Train scene 1"), (3, "Train scene 3"), (4, "Train scene 4")]:
+    for train_scene, label in [(1, "Train scene 1"), (2, "Train scene 2"), (3, "Train scene 3"), (4, "Train scene 4")]:
         run = RUN_ROOT / f"easy_to_medium_hard_train{train_scene}_seed7"
         info = json.loads((run / "pipeline" / "elite.json").read_text(encoding="utf-8"))
         config = json.loads((run / "config.json").read_text(encoding="utf-8"))
         trainer = KartezioTrainer(n_inputs=1, n_nodes=int(config["nodes"]), libraries=build_illumination_library(), endpoint=EndpointThreshold(128), fitness=PilotTestQSegFitness())
         trainers.append((label, trainer, Genotype.__from_dict__(info["genotype"])))
 
-    fig, axes = plt.subplots(4, 5, figsize=(15, 11))
-    headers = ["Input", "Ground truth", "Train scene 1", "Train scene 3", "Train scene 4"]
+    fig, axes = plt.subplots(4, 6, figsize=(18, 11))
+    headers = ["Input", "Ground truth", "Train scene 1", "Train scene 2", "Train scene 3", "Train scene 4"]
     for row, scene in enumerate((1, 2, 3, 4)):
         sample = dataset.load_sample(scene, 9, 14)
         panels = [sample.image, sample.mask]
