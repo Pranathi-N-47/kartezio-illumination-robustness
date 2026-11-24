@@ -1,0 +1,8 @@
+{
+  "run_id": "easy_to_medium_hard_allscenes_seed31415",
+  "images": 728,
+  "dice": 0.721473014602222,
+  "iou": 0.6268134806409003,
+  "q_seg": 0.6594980483284545,
+  "count_error": 177.1635839049553
+}

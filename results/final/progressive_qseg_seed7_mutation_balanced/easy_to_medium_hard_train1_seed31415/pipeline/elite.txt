@@ -1,0 +1,6 @@
+Elite pipeline: easy_to_medium_hard_train1_seed31415
+Active nodes: 4 / 8
+node 1: Erode edges=[0] params=[57, 37]
+node 3: Inverse edges=[1] params=[154, 41]
+node 5: OtsuThreshold edges=[3] params=[159, 126]
+node 7: GaussianBlur edges=[5] params=[226, 245]
