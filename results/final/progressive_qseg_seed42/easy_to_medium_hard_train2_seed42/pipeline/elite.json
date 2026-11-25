@@ -1,0 +1,114 @@
+{
+  "available_nodes": 8,
+  "active_nodes": 4,
+  "nodes": [
+    {
+      "node": 1,
+      "primitive": "OtsuThreshold",
+      "edges": [
+        0
+      ],
+      "parameters": [
+        178,
+        192
+      ]
+    },
+    {
+      "node": 3,
+      "primitive": "Identity",
+      "edges": [
+        1
+      ],
+      "parameters": [
+        124,
+        36
+      ]
+    },
+    {
+      "node": 6,
+      "primitive": "GaussianBlur",
+      "edges": [
+        3
+      ],
+      "parameters": [
+        109,
+        252
+      ]
+    },
+    {
+      "node": 7,
+      "primitive": "Inverse",
+      "edges": [
+        6
+      ],
+      "parameters": [
+        27,
+        207
+      ]
+    }
+  ],
+  "outputs": [
+    7
+  ],
+  "genotype": {
+    "chromosomes": {
+      "chromosome_0": {
+        "sequence": {
+          "outputs": [
+            7
+          ],
+          "matrix": [
+            [
+              5,
+              0,
+              178,
+              192
+            ],
+            [
+              14,
+              1,
+              173,
+              100
+            ],
+            [
+              0,
+              1,
+              124,
+              36
+            ],
+            [
+              2,
+              3,
+              234,
+              52
+            ],
+            [
+              0,
+              2,
+              30,
+              144
+            ],
+            [
+              3,
+              3,
+              109,
+              252
+            ],
+            [
+              1,
+              6,
+              27,
+              207
+            ],
+            [
+              0,
+              5,
+              31,
+              249
+            ]
+          ]
+        }
+      }
+    }
+  }
+}

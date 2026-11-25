@@ -1,0 +1,4 @@
+Elite pipeline: easy_to_medium_hard_train3_seed42
+Active nodes: 2 / 8
+node 1: OtsuThreshold edges=[0] params=[254, 98]
+node 7: Inverse edges=[1] params=[3, 189]
