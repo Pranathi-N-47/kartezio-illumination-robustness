@@ -1,0 +1,8 @@
+{
+  "run_id": "easy_to_medium_hard_train3_seed42",
+  "experiment": "easy_to_medium_hard",
+  "seed": 42,
+  "train_q_seg": 0.8102944481883718,
+  "active_nodes": 2,
+  "history_length": 76
+}
